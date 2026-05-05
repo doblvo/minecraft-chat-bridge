@@ -2,450 +2,714 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  />
   <title>Chat Minecraft</title>
+  <script src="/socket.io/socket.io.js"></script>
+
   <style>
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: radial-gradient(circle at top, #1e293b, #020617 58%);
-      color: #f8fafc;
+    :root {
+      --bg: #061127;
+      --panel: #0e1b35;
+      --panel-2: #132346;
+      --line: rgba(255,255,255,0.08);
+      --text: #eef4ff;
+      --muted: #97a8c7;
+      --green: #22c55e;
+      --green-2: #16a34a;
+      --red: #ef4444;
+      --blue: #60a5fa;
+      --chip: rgba(255,255,255,0.08);
+      --shadow: 0 10px 30px rgba(0,0,0,0.25);
+      --radius: 16px;
     }
-    button, input { font-family: inherit; }
-    .login {
-      min-height: 100vh;
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background:
+        radial-gradient(circle at top, #13254b 0%, #061127 50%, #040b18 100%);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      height: 100%;
+    }
+
+    body {
+      min-height: 100dvh;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* LOGIN */
+    .login-wrap {
+      min-height: 100dvh;
       display: grid;
       place-items: center;
-      padding: 18px;
+      padding: 20px;
     }
-    .card {
+
+    .login-card {
       width: 100%;
-      max-width: 430px;
-      background: rgba(15, 23, 42, .94);
-      border: 1px solid rgba(148, 163, 184, .24);
-      border-radius: 24px;
+      max-width: 420px;
+      background: rgba(10, 20, 40, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
       padding: 22px;
-      box-shadow: 0 22px 80px rgba(0, 0, 0, .45);
+      backdrop-filter: blur(10px);
     }
-    h1 { margin: 0 0 6px; font-size: 25px; }
-    .muted { color: #94a3b8; font-size: 14px; line-height: 1.38; }
-    label { display: block; margin-top: 16px; margin-bottom: 7px; color: #cbd5e1; font-size: 13px; font-weight: 700; }
-    input, button {
+
+    .login-card h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .login-card p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: #d7e5ff;
+      font-weight: 600;
+    }
+
+    .input {
       width: 100%;
-      border: 0;
-      border-radius: 15px;
-      padding: 13px 14px;
-      font-size: 15px;
+      height: 50px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: white;
+      border-radius: 14px;
+      padding: 0 14px;
+      font-size: 16px;
       outline: none;
     }
-    input { background: #0f172a; color: white; border: 1px solid #334155; }
-    button { background: #22c55e; color: #04210f; font-weight: 900; cursor: pointer; }
-    button:active { transform: translateY(1px); }
-    button.secondary { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
-    button:disabled { opacity: .45; cursor: not-allowed; }
-    .row { display: flex; gap: 10px; }
-    .error { color: #fca5a5; margin-top: 10px; min-height: 18px; font-size: 13px; }
 
-    #app { display: none; min-height: 100vh; height: 100vh; flex-direction: column; }
-    header {
-      padding: 12px 14px;
-      background: rgba(15, 23, 42, .96);
-      border-bottom: 1px solid #334155;
+    .input::placeholder {
+      color: #7c8cad;
+    }
+
+    .btn {
+      height: 50px;
+      border: none;
+      border-radius: 14px;
+      padding: 0 18px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(180deg, #2fd66a 0%, #19b956 100%);
+      color: #052010;
+      width: 100%;
+      margin-top: 14px;
+    }
+
+    .small {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* APP */
+    .app {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding:
+        calc(10px + env(safe-area-inset-top))
+        12px
+        10px
+        12px;
+      background: rgba(6, 17, 39, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .topbar-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .top-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      position: sticky;
-      top: 0;
-      z-index: 20;
     }
-    .title { font-weight: 900; font-size: 16px; }
-    .status { font-size: 12px; color: #94a3b8; }
-    .header-right { text-align: right; display: flex; flex-direction: column; gap: 2px; }
-    .pill {
+
+    .title {
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .status-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      width: fit-content;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--line);
+      padding: 8px 12px;
       border-radius: 999px;
-      padding: 4px 9px;
-      font-size: 12px;
-      font-weight: 800;
-      border: 1px solid rgba(148, 163, 184, .25);
-      background: rgba(30, 41, 59, .85);
+      font-size: 13px;
+      white-space: nowrap;
     }
-    .dot { width: 8px; height: 8px; border-radius: 999px; background: #64748b; display: inline-block; }
-    .online .dot { background: #22c55e; box-shadow: 0 0 14px rgba(34, 197, 94, .8); }
-    .offline .dot { background: #ef4444; box-shadow: 0 0 14px rgba(239, 68, 68, .55); }
 
-    .dashboard {
-      padding: 10px 12px 0;
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--red);
+      box-shadow: 0 0 10px rgba(239,68,68,0.5);
+    }
+
+    .dot.online {
+      background: var(--green);
+      box-shadow: 0 0 10px rgba(34,197,94,0.5);
+    }
+
+    .info-grid {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: 1fr;
       gap: 10px;
     }
-    .info-card {
-      background: rgba(15, 23, 42, .76);
-      border: 1px solid rgba(148, 163, 184, .18);
-      border-radius: 17px;
-      padding: 10px;
-      min-height: 76px;
-    }
-    .info-label { color: #94a3b8; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
-    .info-value { margin-top: 6px; font-size: 20px; font-weight: 900; }
-    .info-small { margin-top: 4px; color: #94a3b8; font-size: 12px; line-height: 1.3; }
-    .players-card { grid-column: span 2; }
-    .chips { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 6px; }
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 5px 8px;
-      background: #1e293b;
-      border: 1px solid rgba(148, 163, 184, .18);
-      color: #dbeafe;
-      font-size: 12px;
-      font-weight: 800;
-    }
-    .empty { color: #64748b; font-size: 13px; margin-top: 8px; }
 
-    #chat {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px;
-      scroll-behavior: smooth;
-    }
-    .msg {
-      background: rgba(30, 41, 59, .92);
-      border: 1px solid rgba(148, 163, 184, .18);
-      margin-bottom: 9px;
-      padding: 10px 11px;
+    .panel-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
       border-radius: 16px;
-      line-height: 1.36;
-      word-break: break-word;
+      padding: 12px;
     }
-    .minecraft { border-left: 4px solid #22c55e; }
-    .web { border-left: 4px solid #38bdf8; }
-    .player { color: #93c5fd; font-weight: 900; }
-    .web .player::before { content: '[WEB] '; color: #38bdf8; }
-    .body { color: #f8fafc; }
-    .meta { margin-top: 5px; color: #94a3b8; font-size: 11px; }
-    .system-note {
-      text-align: center;
-      color: #94a3b8;
-      font-size: 12px;
-      padding: 8px;
-    }
-    form {
+
+    .meta-line {
       display: flex;
-      gap: 8px;
-      padding: 10px;
-      padding-bottom: calc(10px + env(safe-area-inset-bottom));
-      background: rgba(15, 23, 42, .96);
-      border-top: 1px solid #334155;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      font-size: 14px;
+      color: var(--muted);
     }
-    form input { flex: 1; }
-    form button { width: auto; padding-left: 16px; padding-right: 16px; }
-    .toast {
-      position: fixed;
-      left: 50%;
-      bottom: 76px;
-      transform: translateX(-50%);
-      background: rgba(15, 23, 42, .96);
+
+    .meta-line strong {
+      color: var(--text);
+    }
+
+    .players-wrap {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .player-chip {
+      background: var(--chip);
+      border: 1px solid var(--line);
       color: white;
-      border: 1px solid rgba(148, 163, 184, .25);
+      padding: 8px 10px;
       border-radius: 999px;
-      padding: 10px 14px;
-      box-shadow: 0 16px 50px rgba(0,0,0,.35);
-      display: none;
-      z-index: 50;
       font-size: 13px;
     }
-    @media (max-width: 760px) {
-      .dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .players-card { grid-column: span 2; }
-      .info-value { font-size: 18px; }
+
+    .player-chip.empty {
+      color: var(--muted);
     }
-    @media (max-width: 420px) {
-      header { align-items: flex-start; }
-      .dashboard { grid-template-columns: 1fr; }
-      .players-card { grid-column: span 1; }
-      .header-right { max-width: 46%; }
-      form button { padding-left: 12px; padding-right: 12px; }
+
+    .panel-users {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      background: rgba(96,165,250,0.12);
+      border: 1px solid rgba(96,165,250,0.25);
+      color: #cfe3ff;
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+    }
+
+    .chat-area {
+      flex: 1;
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 12px 12px 120px;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .message {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 5px 18px rgba(0,0,0,0.12);
+    }
+
+    .message.minecraft {
+      border-left: 4px solid #22c55e;
+    }
+
+    .message.web {
+      border-left: 4px solid #60a5fa;
+    }
+
+    .msg-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+
+    .msg-name {
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .msg-badge {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      color: #dce8ff;
+    }
+
+    .msg-text {
+      font-size: 15px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .msg-meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .composer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 30;
+      padding:
+        10px 12px
+        calc(10px + env(safe-area-inset-bottom))
+        12px;
+      background: rgba(6, 17, 39, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--line);
+    }
+
+    .composer-inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .composer-input {
+      flex: 1;
+      min-width: 0;
+      height: 52px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.04);
+      color: white;
+      padding: 0 16px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .composer-input::placeholder {
+      color: #7f8fb0;
+    }
+
+    .composer-btn {
+      height: 52px;
+      min-width: 96px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(180deg, #2fd66a 0%, #19b956 100%);
+      color: #062212;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 0 18px;
+      cursor: pointer;
+    }
+
+    .composer-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .viewer-note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    @media (min-width: 768px) {
+      .info-grid {
+        grid-template-columns: 1.2fr 0.8fr;
+      }
+
+      .chat-area {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+
+      .composer {
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .title {
+        font-size: 20px;
+      }
+
+      .top-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .status-pill {
+        width: fit-content;
+      }
+
+      .message {
+        padding: 11px 12px;
+        border-radius: 16px;
+      }
+
+      .msg-name {
+        font-size: 15px;
+      }
+
+      .msg-text {
+        font-size: 14px;
+      }
+
+      .composer-inner {
+        gap: 8px;
+      }
+
+      .composer-btn {
+        min-width: 84px;
+        padding: 0 14px;
+      }
     }
   </style>
 </head>
 <body>
-  <section id="login" class="login">
-    <div class="card">
-      <h1>Chat Minecraft V2</h1>
-      <p class="muted">Panel móvil en tiempo real con usuario fijo por token, roles y jugadores conectados.</p>
-      <label for="tokenInput">Token del panel</label>
-      <input id="tokenInput" placeholder="Token privado" autocomplete="off" />
-      <br><br>
-      <button id="connectBtn">Entrar</button>
-      <div id="error" class="error"></div>
-      <p class="muted">Tu nombre ya no se escribe manualmente. El backend lo asigna según tu token.</p>
+  <!-- LOGIN -->
+  <section id="loginView" class="login-wrap">
+    <div class="login-card">
+      <h1>Chat Minecraft</h1>
+      <p>
+        Panel móvil en tiempo real para ver el chat, el estado del servidor
+        y los jugadores conectados.
+      </p>
+
+      <label class="label" for="tokenInput">Token del panel</label>
+      <input
+        id="tokenInput"
+        class="input"
+        type="password"
+        placeholder="Ej: tokenFelipe123"
+      />
+
+      <button id="loginBtn" class="btn btn-primary">Entrar</button>
+
+      <div class="small">
+        El backend asigna automáticamente tu nombre y tu rol según el token.
+      </div>
     </div>
   </section>
 
-  <section id="app">
-    <header>
-      <div>
-        <div class="title">Chat Minecraft</div>
-        <div id="serverLabel" class="status">Servidor: main</div>
-      </div>
-      <div class="header-right">
-        <span id="serverPill" class="pill offline"><span class="dot"></span><span>Sin señal</span></span>
-        <div id="meLabel" class="status">Usuario: -</div>
+  <!-- APP -->
+  <section id="appView" class="app hidden">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="top-row">
+          <div class="title">Chat Minecraft</div>
+
+          <div class="status-pill">
+            <span id="serverDot" class="dot"></span>
+            <span id="serverStatusText">Sin señal</span>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="panel-card">
+            <div class="meta-line">
+              <span><strong>Servidor:</strong> <span id="serverIdText">main</span></span>
+              <span><strong>Jugadores:</strong> <span id="playersCountText">0/0</span></span>
+              <span><strong>Última señal:</strong> <span id="lastSeenText">-</span></span>
+            </div>
+
+            <div id="playersWrap" class="players-wrap">
+              <span class="player-chip empty">Sin jugadores conectados</span>
+            </div>
+          </div>
+
+          <div class="panel-card">
+            <div class="meta-line">
+              <span><strong>Panel:</strong> <span id="meText">-</span></span>
+              <span><strong>Rol:</strong> <span id="roleText">-</span></span>
+            </div>
+
+            <div id="panelUsersWrap" class="panel-users">
+              <span class="tag">Sin usuarios en el panel</span>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
-    <section class="dashboard">
-      <div class="info-card">
-        <div class="info-label">Estado server</div>
-        <div id="serverState" class="info-value">Sin señal</div>
-        <div id="lastSeen" class="info-small">Esperando mod...</div>
-      </div>
-      <div class="info-card">
-        <div class="info-label">Jugadores</div>
-        <div id="playersCount" class="info-value">0/0</div>
-        <div id="connectionStatus" class="info-small">Panel conectando...</div>
-      </div>
-      <div class="info-card players-card">
-        <div class="info-label">Conectados en Minecraft</div>
-        <div id="playersList" class="chips"><span class="empty">Sin jugadores reportados.</span></div>
-      </div>
-      <div class="info-card players-card">
-        <div class="info-label">Usuarios viendo este panel</div>
-        <div id="panelUsersList" class="chips"><span class="empty">Cargando...</span></div>
-      </div>
-    </section>
+    <main id="chatArea" class="chat-area"></main>
 
-    <main id="chat">
-      <div class="system-note">Cuando el mod reporte mensajes, aparecerán aquí.</div>
-    </main>
+    <footer class="composer">
+      <div class="composer-inner">
+        <input
+          id="messageInput"
+          class="composer-input"
+          type="text"
+          placeholder="Escribe al server..."
+          autocomplete="off"
+        />
+        <button id="sendBtn" class="composer-btn">Enviar</button>
+      </div>
 
-    <form id="form">
-      <input id="message" placeholder="Escribe al server..." autocomplete="off" />
-      <button id="sendBtn">Enviar</button>
-    </form>
+      <div id="viewerNote" class="viewer-note hidden">
+        Tu rol es viewer: puedes mirar, pero no escribir.
+      </div>
+    </footer>
   </section>
 
-  <div id="toast" class="toast"></div>
-
-  <script src="/socket.io/socket.io.js"></script>
   <script>
-    const SERVER_ID = 'main';
     let socket = null;
-    let currentUser = null;
-    let lastStatus = null;
+    let currentRole = "";
+    let currentName = "";
 
-    const login = document.getElementById('login');
-    const app = document.getElementById('app');
-    const tokenInput = document.getElementById('tokenInput');
-    const connectBtn = document.getElementById('connectBtn');
-    const errorBox = document.getElementById('error');
-    const chat = document.getElementById('chat');
-    const form = document.getElementById('form');
-    const input = document.getElementById('message');
-    const sendBtn = document.getElementById('sendBtn');
-    const connectionStatus = document.getElementById('connectionStatus');
-    const meLabel = document.getElementById('meLabel');
-    const serverPill = document.getElementById('serverPill');
-    const serverState = document.getElementById('serverState');
-    const lastSeen = document.getElementById('lastSeen');
-    const playersCount = document.getElementById('playersCount');
-    const playersList = document.getElementById('playersList');
-    const panelUsersList = document.getElementById('panelUsersList');
-    const toast = document.getElementById('toast');
+    const loginView = document.getElementById("loginView");
+    const appView = document.getElementById("appView");
 
-    tokenInput.value = localStorage.getItem('mc_panel_token') || '';
-    connectBtn.addEventListener('click', connect);
-    tokenInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') connect(); });
+    const tokenInput = document.getElementById("tokenInput");
+    const loginBtn = document.getElementById("loginBtn");
 
-    function connect() {
-      const token = tokenInput.value.trim();
+    const chatArea = document.getElementById("chatArea");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const viewerNote = document.getElementById("viewerNote");
 
-      if (!token) {
-        errorBox.textContent = 'Ingresa tu token.';
-        return;
-      }
+    const serverDot = document.getElementById("serverDot");
+    const serverStatusText = document.getElementById("serverStatusText");
+    const serverIdText = document.getElementById("serverIdText");
+    const playersCountText = document.getElementById("playersCountText");
+    const lastSeenText = document.getElementById("lastSeenText");
+    const playersWrap = document.getElementById("playersWrap");
+    const panelUsersWrap = document.getElementById("panelUsersWrap");
+    const meText = document.getElementById("meText");
+    const roleText = document.getElementById("roleText");
 
-      localStorage.setItem('mc_panel_token', token);
-      errorBox.textContent = '';
-      connectBtn.disabled = true;
-      connectBtn.textContent = 'Conectando...';
+    tokenInput.value = localStorage.getItem("panel_token") || "";
 
-      socket = io({
-        auth: { token },
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 600,
-        reconnectionDelayMax: 2500
-      });
-
-      socket.on('connect', () => {
-        login.style.display = 'none';
-        app.style.display = 'flex';
-        connectionStatus.textContent = 'Panel online';
-        connectBtn.disabled = false;
-        connectBtn.textContent = 'Entrar';
-      });
-
-      socket.on('disconnect', () => {
-        connectionStatus.textContent = 'Panel reconectando...';
-      });
-
-      socket.on('connect_error', (err) => {
-        errorBox.textContent = err?.message === 'UNAUTHORIZED'
-          ? 'Token incorrecto.'
-          : 'Backend no disponible.';
-        connectBtn.disabled = false;
-        connectBtn.textContent = 'Entrar';
-      });
-
-      socket.on('me', (user) => {
-        currentUser = user;
-        meLabel.textContent = `${user.name} · ${user.role}`;
-        if (!user.canWrite) {
-          input.disabled = true;
-          sendBtn.disabled = true;
-          input.placeholder = 'Tu token es solo lectura.';
-        } else {
-          input.disabled = false;
-          sendBtn.disabled = false;
-          input.placeholder = `Escribir como ${user.name}...`;
-        }
-      });
-
-      socket.on('history', (messages) => {
-        chat.innerHTML = '';
-        if (!messages || messages.length === 0) {
-          chat.innerHTML = '<div class="system-note">Sin mensajes todavía.</div>';
-          return;
-        }
-        for (const msg of messages) addMessage(msg);
-      });
-
-      socket.on('chat', addMessage);
-
-      socket.on('server-status', (statuses) => {
-        const status = Array.isArray(statuses)
-          ? statuses.find((item) => item.serverId === SERVER_ID) || statuses[0]
-          : statuses;
-        updateServerStatus(status);
-      });
-
-      socket.on('panel-users', updatePanelUsers);
-
-      socket.on('toast', (data) => {
-        showToast(data?.message || 'Mensaje del servidor.');
-      });
-    }
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const message = input.value.trim();
-      if (!message || !socket?.connected || !currentUser?.canWrite) return;
-
-      socket.emit('web-chat', {
-        serverId: SERVER_ID,
-        message
-      });
-
-      input.value = '';
-      input.focus();
+    loginBtn.addEventListener("click", connectPanel);
+    tokenInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") connectPanel();
     });
 
-    function updateServerStatus(status) {
-      lastStatus = status || null;
-      const online = Boolean(status?.online);
-      const max = Number(status?.maxPlayers || 0);
-      const count = Number(status?.playerCount || status?.players?.length || 0);
-      const players = Array.isArray(status?.players) ? status.players : [];
+    sendBtn.addEventListener("click", sendMessage);
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
 
-      serverPill.className = `pill ${online ? 'online' : 'offline'}`;
-      serverPill.innerHTML = `<span class="dot"></span><span>${online ? 'Online' : 'Sin señal'}</span>`;
-      serverState.textContent = online ? 'Online' : 'Sin señal';
-      playersCount.textContent = `${count}/${max || '?'}`;
-
-      if (status?.lastSeen) {
-        lastSeen.textContent = `Última señal: ${timeAgo(status.lastSeen)}`;
-      } else {
-        lastSeen.textContent = 'Esperando heartbeat del mod.';
-      }
-
-      if (players.length === 0) {
-        playersList.innerHTML = '<span class="empty">No hay jugadores conectados o el mod aún no reporta.</span>';
-      } else {
-        playersList.innerHTML = players.map((name) => `<span class="chip">${escapeHtml(name)}</span>`).join('');
-      }
-    }
-
-    function updatePanelUsers(users) {
-      if (!Array.isArray(users) || users.length === 0) {
-        panelUsersList.innerHTML = '<span class="empty">Nadie conectado al panel.</span>';
+    function connectPanel() {
+      const token = tokenInput.value.trim();
+      if (!token) {
+        alert("Ingresa tu token.");
         return;
       }
 
-      panelUsersList.innerHTML = users.map((user) => {
-        const extra = user.count > 1 ? ` x${user.count}` : '';
-        return `<span class="chip">${escapeHtml(user.name)} · ${escapeHtml(user.role)}${extra}</span>`;
-      }).join('');
+      localStorage.setItem("panel_token", token);
+
+      socket = io({
+        auth: { token }
+      });
+
+      socket.on("connect", () => {
+        loginView.classList.add("hidden");
+        appView.classList.remove("hidden");
+      });
+
+      socket.on("connect_error", (err) => {
+        alert("No se pudo entrar al panel. Revisa el token.");
+        console.error(err);
+      });
+
+      socket.on("auth-ok", (data) => {
+        currentName = data.name || "-";
+        currentRole = data.role || "-";
+
+        meText.textContent = currentName;
+        roleText.textContent = currentRole;
+
+        const canWrite = currentRole === "admin" || currentRole === "writer";
+        sendBtn.disabled = !canWrite;
+        messageInput.disabled = !canWrite;
+        viewerNote.classList.toggle("hidden", canWrite);
+        messageInput.placeholder = canWrite
+          ? "Escribe al server..."
+          : "Tu rol no permite enviar mensajes";
+      });
+
+      socket.on("chat-history", (messages) => {
+        chatArea.innerHTML = "";
+        (messages || []).forEach(renderMessage);
+        scrollToBottom();
+      });
+
+      socket.on("chat", (msg) => {
+        renderMessage(msg);
+        scrollToBottom();
+      });
+
+      socket.on("presence", (data) => {
+        renderPresence(data);
+      });
     }
 
-    function addMessage(data) {
-      const existingNote = chat.querySelector('.system-note');
-      if (existingNote) existingNote.remove();
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !socket) return;
+      if (!(currentRole === "admin" || currentRole === "writer")) return;
 
-      const div = document.createElement('div');
-      const source = data.source || 'minecraft';
-      div.className = `msg ${source}`;
+      socket.emit("web-chat", {
+        serverId: "main",
+        message: text
+      });
 
-      const date = new Date(data.ts || Date.now());
-      const time = date.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+      messageInput.value = "";
+      messageInput.focus();
+    }
 
-      div.innerHTML = `
-        <span class="player">${escapeHtml(data.player)}</span>:
-        <span class="body">${escapeHtml(data.message)}</span>
-        <div class="meta">${time} · ${escapeHtml(source)} · ${escapeHtml(data.serverId || 'main')}</div>
+    function renderMessage(data) {
+      const box = document.createElement("div");
+      const source = data.source === "web" ? "web" : "minecraft";
+      box.className = `message ${source}`;
+
+      const time = formatTime(data.ts);
+      const badge = source === "web" ? "WEB" : "MC";
+
+      box.innerHTML = `
+        <div class="msg-top">
+          <span class="msg-name">${escapeHtml(data.player || "Unknown")}</span>
+          <span class="msg-badge">${badge}</span>
+        </div>
+        <div class="msg-text">${escapeHtml(data.message || "")}</div>
+        <div class="msg-meta">${time} · ${escapeHtml(data.serverId || "main")}</div>
       `;
 
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
+      chatArea.appendChild(box);
     }
 
-    function timeAgo(ts) {
-      const diff = Math.max(0, Date.now() - Number(ts));
-      if (diff < 2000) return 'ahora';
-      if (diff < 60000) return `hace ${Math.round(diff / 1000)}s`;
-      if (diff < 3600000) return `hace ${Math.round(diff / 60000)}min`;
-      return new Date(Number(ts)).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    function renderPresence(data) {
+      const online = !!data.online;
+      serverDot.classList.toggle("online", online);
+      serverStatusText.textContent = online ? "Online" : "Sin señal";
+
+      serverIdText.textContent = data.serverId || "main";
+      playersCountText.textContent = `${data.currentPlayers ?? 0}/${data.maxPlayers ?? 0}`;
+      lastSeenText.textContent = data.lastSeenText || "-";
+
+      const players = Array.isArray(data.players) ? data.players : [];
+      playersWrap.innerHTML = "";
+
+      if (!players.length) {
+        playersWrap.innerHTML = `<span class="player-chip empty">Sin jugadores conectados</span>`;
+      } else {
+        players.forEach((name) => {
+          const el = document.createElement("span");
+          el.className = "player-chip";
+          el.textContent = name;
+          playersWrap.appendChild(el);
+        });
+      }
+
+      const panelUsers = Array.isArray(data.panelUsers) ? data.panelUsers : [];
+      panelUsersWrap.innerHTML = "";
+
+      if (!panelUsers.length) {
+        panelUsersWrap.innerHTML = `<span class="tag">Sin usuarios en el panel</span>`;
+      } else {
+        panelUsers.forEach((u) => {
+          const el = document.createElement("span");
+          el.className = "tag";
+          el.textContent = `${u.name}${u.role ? " · " + u.role : ""}`;
+          panelUsersWrap.appendChild(el);
+        });
+      }
     }
 
-    setInterval(() => {
-      if (lastStatus) updateServerStatus(lastStatus);
-    }, 1000);
-
-    function showToast(message) {
-      toast.textContent = message;
-      toast.style.display = 'block';
-      clearTimeout(showToast._timer);
-      showToast._timer = setTimeout(() => {
-        toast.style.display = 'none';
-      }, 2600);
+    function formatTime(ts) {
+      if (!ts) return "-";
+      try {
+        return new Date(ts).toLocaleTimeString("es-CL", {
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      } catch {
+        return "-";
+      }
     }
 
-    function escapeHtml(value) {
-      return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        chatArea.scrollTop = chatArea.scrollHeight;
+      });
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
   </script>
 </body>
