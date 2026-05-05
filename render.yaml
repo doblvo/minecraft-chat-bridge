@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: minecraft-chat-bridge
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: MOD_SECRET
+        sync: false
+      - key: PANEL_TOKEN
+        sync: false
+      - key: MAX_HISTORY
+        value: "100"
+      - key: MAX_OUTBOX
+        value: "50"
